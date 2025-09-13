@@ -20,6 +20,8 @@ def main():
         print(format_csv_for_display(filename))
     except FileNotFoundError:
         sys.exit("File does not exist")
+    except ValueError as e:
+        sys.exit(f"Error: {e}")
     except Exception as e:
         sys.exit(f"Error: {e}")
 

@@ -14,11 +14,18 @@ def test_check_command_line_args_too_few_args() -> None:
 
 
 def test_check_command_line_args_too_many_args() -> None:
-    pytest.MonkeyPatch().setattr(sys, "argv", ["pizza.py", "hello.py", "goodbye.py"])
+    pytest.MonkeyPatch().setattr(
+        sys, "argv", ["pizza.py", "sicilian.csv", "regular.csv"]
+    )
 
     with pytest.raises(SystemExit) as e:
         check_command_line_args()
     assert str(e.value) == "Too many command-line arguments"
+
+
+def test_check_command_line_args_correct():
+    pytest.MonkeyPatch().setattr(sys, "argv", ["pizza.py", "sicilian.csv"])
+    check_command_line_args()  # Should not raise
 
 
 def test_check_file_is_csv_file_not_csv_file() -> None:
@@ -36,19 +43,34 @@ def test_read_csv_as_dict() -> None:
     assert result == {"name": ["Alice", "Bob"], "age": ["30", "25"]}
 
 
+def test_read_csv_as_dict_extra_whitespace_missing_values() -> None:
+    fake_csv = "name,age\nAlice,\nBob,25\n"
+
+    with patch("builtins.open", mock_open(read_data=fake_csv)):
+        result = read_csv_as_dict("dummy.csv")
+
+    assert result == {"name": ["Alice", "Bob"], "age": ["", "25"]}
+
+
 def test_read_csv_as_dict_no_headers() -> None:
     fake_csv = ""
 
     with patch("builtins.open", mock_open(read_data=fake_csv)):
-        with pytest.raises(SystemExit) as e:
+        with pytest.raises(ValueError) as e:
             read_csv_as_dict("dummy.csv")
-        assert str(e.value) == "Error: Could not find CSV headers"
+        assert str(e.value) == "Could not find CSV headers"
 
 
 def test_read_csv_as_dict_csv_empty() -> None:
     fake_csv = "name,age"
 
     with patch("builtins.open", mock_open(read_data=fake_csv)):
-        with pytest.raises(SystemExit) as e:
+        with pytest.raises(ValueError) as e:
             read_csv_as_dict("dummy.csv")
-        assert str(e.value) == "Error: CSV file is empty"
+        assert str(e.value) == "CSV file is empty"
+
+
+def test_read_csv_as_dict_file_not_found() -> None:
+
+    with pytest.raises(FileNotFoundError):
+        read_csv_as_dict("non_existent.csv")
